@@ -8,13 +8,19 @@ import {
   Pressable,
 } from 'react-native';
 import { RTCView } from 'react-native-webrtc';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 
 import { useWebRtcDemo } from '../../modules';
 import { appConfig, SignalRole } from '../../services';
 import { colors, spacing, typography, radii } from '../../theme';
-import { useCaptureStore } from '../../state';
+import { useCaptureStore, useUserStore } from '../../state';
+import type { RootStackParamList } from '../../navigation/types';
 
 export const HomeScreen = (): React.ReactElement => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { user } = useUserStore();
   const [sessionId, setSessionId] = useState('demo-room');
   const [role, setRole] = useState<SignalRole>('sender');
   const [endpoint, setEndpoint] = useState(appConfig.signalingUrl);

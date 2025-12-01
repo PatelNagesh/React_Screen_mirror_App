@@ -1,22 +1,20 @@
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  PressableStateCallbackType,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
+  Alert,
 } from 'react-native';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import Feather from 'react-native-vector-icons/Feather';
-import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import { useNavigation } from '@react-navigation/native';
 
 import { colors, spacing, typography, radii, shadows } from '../../theme';
+import { useUserStore } from '../../state';
+import { Button, Card, Input } from '../../components';
 import type { RootStackParamList } from '../../navigation/types';
 
 type Field = 'email' | 'password' | null;
@@ -27,31 +25,70 @@ export const AuthScreen = (): React.ReactElement => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [focusedField, setFocusedField] = useState<Field>(null);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [name, setName] = useState('');
 
-  const inputState = useMemo(
-    () => ({
-      email: focusedField === 'email',
-      password: focusedField === 'password',
-    }),
-    [focusedField],
-  );
+  const {
+    signIn,
+    signUp,
+    signInWithGoogle,
+    signInWithApple,
+    continueAsGuest,
+    isLoading,
+    error,
+    clearError,
+  } = useUserStore();
 
-  const handleSignInPress = () => {
-    // TODO: Replace placeholder navigation with actual auth logic.
-    navigation.navigate('Home');
+  const handleSignInPress = async () => {
+    if (!email.trim() || !password.trim()) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    try {
+      clearError();
+      if (isSignUp) {
+        await signUp(email.trim(), password, name.trim() || undefined);
+      } else {
+        await signIn(email.trim(), password);
+      }
+      navigation.navigate('Home');
+    } catch (error) {
+      // Error is handled by the store
+      Alert.alert('Authentication Failed', error instanceof Error ? error.message : 'Please try again');
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      clearError();
+      await signInWithGoogle();
+      navigation.navigate('Home');
+    } catch (error) {
+      Alert.alert('Google Sign In Failed', 'Please try again');
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    try {
+      clearError();
+      await signInWithApple();
+      navigation.navigate('Home');
+    } catch (error) {
+      Alert.alert('Apple Sign In Failed', 'Please try again');
+    }
   };
 
   const handleGuestPress = () => {
+    continueAsGuest();
     navigation.navigate('Home');
   };
 
-  const renderPressableStyle =
-    (baseStyle: object, pressedStyle: object = {}) =>
-    ({ pressed }: PressableStateCallbackType) => [
-      baseStyle,
-      pressed && pressedStyle,
-    ];
+  const toggleMode = () => {
+    setIsSignUp(!isSignUp);
+    setName('');
+    clearError();
+  };
 
   return (
     <KeyboardAvoidingView
@@ -65,98 +102,73 @@ export const AuthScreen = (): React.ReactElement => {
           <View style={styles.logo}>
             <FontAwesome5 name="bolt" size={26} color={colors.primary} />
           </View>
-          <Text style={styles.heading}>Welcome Back</Text>
+          <Text style={styles.heading}>
+            {isSignUp ? 'Create Account' : 'Welcome Back'}
+          </Text>
           <Text style={styles.subheading}>
-            Sign in to continue to BeamSync
+            {isSignUp ? 'Sign up to start using BeamSync' : 'Sign in to continue to BeamSync'}
           </Text>
         </View>
 
-        <View style={styles.formSection}>
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Email Address</Text>
-            <View
-              style={[
-                styles.inputWrapper,
-                inputState.email && styles.inputFocused,
-              ]}>
-              <FontAwesome5
-                name="envelope"
-                size={16}
-                color={inputState.email ? colors.primary : colors.slate400}
-                style={styles.leftIcon}
-              />
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                onFocus={() => setFocusedField('email')}
-                onBlur={() => setFocusedField(null)}
-                placeholder="name@example.com"
-                placeholderTextColor={colors.slate400}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                style={styles.input}
-                textContentType="emailAddress"
-                accessibilityLabel="Email address"
-              />
-            </View>
-          </View>
+        <Card style={styles.formSection}>
+          {isSignUp && (
+            <Input
+              label="Full Name"
+              value={name}
+              onChangeText={setName}
+              placeholder="John Doe"
+              autoCapitalize="words"
+              leftIcon="user"
+              textContentType="name"
+              accessibilityLabel="Full name"
+            />
+          )}
 
-          <View style={styles.formGroup}>
+          <Input
+            label="Email Address"
+            value={email}
+            onChangeText={setEmail}
+            placeholder="name@example.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            leftIcon="envelope"
+            textContentType="emailAddress"
+            accessibilityLabel="Email address"
+          />
+
+          <View style={styles.passwordGroup}>
             <View style={styles.labelRow}>
               <Text style={styles.label}>Password</Text>
-              <Pressable
-                style={styles.linkButton}
-                hitSlop={8}
-                onPress={() => {}}>
+              <Pressable style={styles.linkButton} hitSlop={8} onPress={() => {}}>
                 <Text style={styles.linkText}>Forgot?</Text>
               </Pressable>
             </View>
-            <View
-              style={[
-                styles.inputWrapper,
-                inputState.password && styles.inputFocused,
-              ]}>
-              <FontAwesome5
-                name="lock"
-                size={16}
-                color={inputState.password ? colors.primary : colors.slate400}
-                style={styles.leftIcon}
-              />
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                onFocus={() => setFocusedField('password')}
-                onBlur={() => setFocusedField(null)}
-                placeholder="••••••••"
-                placeholderTextColor={colors.slate400}
-                secureTextEntry={!isPasswordVisible}
-                autoCapitalize="none"
-                style={styles.input}
-                textContentType="password"
-                accessibilityLabel="Password"
-              />
-              <Pressable
-                onPress={() => setIsPasswordVisible(prev => !prev)}
-                style={styles.eyeButton}
-                hitSlop={8}>
-                <Feather
-                  name={isPasswordVisible ? 'eye-off' : 'eye'}
-                  size={18}
-                  color={colors.slate400}
-                />
-              </Pressable>
-            </View>
+            <Input
+              value={password}
+              onChangeText={setPassword}
+              placeholder="••••••••"
+              secureTextEntry={!isPasswordVisible}
+              autoCapitalize="none"
+              leftIcon="lock"
+              rightIcon={isPasswordVisible ? 'eye-off' : 'eye'}
+              onRightIconPress={() => setIsPasswordVisible(prev => !prev)}
+              textContentType="password"
+              accessibilityLabel="Password"
+              error={error || undefined}
+            />
           </View>
 
-          <Pressable
+          <Button
+            title={isLoading ? 'Please wait...' : (isSignUp ? 'Sign Up' : 'Sign In')}
             onPress={handleSignInPress}
-            style={renderPressableStyle(
-              styles.primaryButton,
-              styles.primaryButtonPressed,
-            )}>
-            <Text style={styles.primaryButtonText}>Sign In</Text>
-            <Feather name="arrow-right" size={16} color={colors.background} />
-          </Pressable>
+            disabled={isLoading}
+            loading={isLoading}
+            icon="arrow-right"
+            iconPosition="right"
+            size="lg"
+            style={styles.signInButton}
+          />
+        </Card>
         </View>
 
         <View style={styles.dividerBlock}>
@@ -166,37 +178,39 @@ export const AuthScreen = (): React.ReactElement => {
         </View>
 
         <View style={styles.socialRow}>
-          <Pressable
-            style={renderPressableStyle(
-              styles.socialButton,
-              styles.socialButtonPressed,
-            )}>
-            <AntDesign name="google" size={18} color={colors.slate700} />
-            <Text style={styles.socialLabel}>Google</Text>
-          </Pressable>
-          <Pressable
-            style={renderPressableStyle(
-              styles.socialButton,
-              styles.socialButtonPressed,
-            )}>
-            <AntDesign name="apple1" size={20} color={colors.slate900} />
-            <Text style={styles.socialLabel}>Apple</Text>
-          </Pressable>
+          <Button
+            title="Google"
+            onPress={handleGoogleSignIn}
+            disabled={isLoading}
+            variant="outline"
+            icon="google"
+            style={styles.socialButton}
+          />
+          <Button
+            title="Apple"
+            onPress={handleAppleSignIn}
+            disabled={isLoading}
+            variant="outline"
+            icon="apple1"
+            style={styles.socialButton}
+          />
         </View>
 
-        <Pressable
+        <Button
+          title="Continue as Guest"
           onPress={handleGuestPress}
-          style={renderPressableStyle(
-            styles.secondaryButton,
-            styles.secondaryButtonPressed,
-          )}>
-          <Text style={styles.secondaryButtonText}>Continue as Guest</Text>
-        </Pressable>
+          variant="secondary"
+          size="lg"
+        />
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Don&apos;t have an account?</Text>
-          <Pressable onPress={() => {}} hitSlop={8}>
-            <Text style={styles.footerLink}>Sign up</Text>
+          <Text style={styles.footerText}>
+            {isSignUp ? 'Already have an account?' : "Don't have an account?"}
+          </Text>
+          <Pressable onPress={toggleMode} hitSlop={8}>
+            <Text style={styles.footerLink}>
+              {isSignUp ? 'Sign in' : 'Sign up'}
+            </Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -244,8 +258,8 @@ const styles = StyleSheet.create({
     rowGap: spacing.lg,
     marginBottom: spacing.xl,
   },
-  formGroup: {
-    rowGap: spacing.sm,
+  passwordGroup: {
+    marginBottom: spacing.lg,
   },
   label: {
     ...typography.caption,
@@ -265,49 +279,6 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.primary,
     fontWeight: '600',
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceMuted,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    paddingHorizontal: spacing.md,
-  },
-  inputFocused: {
-    borderColor: colors.primary,
-    backgroundColor: colors.background,
-  },
-  leftIcon: {
-    marginRight: spacing.sm,
-  },
-  input: {
-    ...typography.body,
-    flex: 1,
-    color: colors.slate800 ?? colors.slate700,
-    paddingVertical: spacing.md,
-  },
-  eyeButton: {
-    paddingLeft: spacing.sm,
-  },
-  primaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primary,
-    borderRadius: radii.lg,
-    paddingVertical: spacing.lg,
-    ...shadows.card,
-  },
-  primaryButtonPressed: {
-    transform: [{ scale: 0.98 }],
-    backgroundColor: colors.primaryDark,
-  },
-  primaryButtonText: {
-    ...typography.button,
-    color: colors.background,
   },
   dividerBlock: {
     flexDirection: 'row',
@@ -332,39 +303,9 @@ const styles = StyleSheet.create({
   },
   socialButton: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    columnGap: spacing.sm,
-    backgroundColor: colors.background,
   },
-  socialButtonPressed: {
-    backgroundColor: colors.surfaceMuted,
-  },
-  socialLabel: {
-    ...typography.bodySmall,
-    color: colors.slate700,
-    fontWeight: '600',
-  },
-  secondaryButton: {
-    borderWidth: 2,
-    borderColor: colors.primary,
-    borderRadius: radii.lg,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
+  signInButton: {
     marginBottom: spacing.lg,
-    backgroundColor: colors.background,
-  },
-  secondaryButtonPressed: {
-    backgroundColor: colors.primaryTransparent,
-  },
-  secondaryButtonText: {
-    ...typography.button,
-    color: colors.primary,
   },
   footer: {
     flexDirection: 'row',
