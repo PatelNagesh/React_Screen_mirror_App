@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StatusBar } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import AppNavigator from './navigation/AppNavigator';
 import { colors } from './theme';
+import { requestAndUpdatePermissions } from './utils/requestAndUpdatePermissions';
 
 const navigationTheme = {
   ...DefaultTheme,
@@ -19,6 +20,11 @@ const navigationTheme = {
 };
 
 const App = (): React.ReactElement => {
+  // request permissions on mount
+  useEffect(() => {
+    requestAndUpdatePermissions();
+  }, []);
+  
   return (
     <SafeAreaProvider>
       <NavigationContainer theme={navigationTheme}>

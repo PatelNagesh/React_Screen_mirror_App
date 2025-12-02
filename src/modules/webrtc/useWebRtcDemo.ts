@@ -10,6 +10,7 @@ import {
 import { appConfig } from '../../services/config';
 import { signalingClient } from '../../services/signaling/signalingClient';
 import type { SignalPayload, SignalRole } from '../../services/signaling/types';
+import RTCTrackEvent from 'react-native-webrtc/lib/typescript/RTCTrackEvent';
 
 const ICE_SERVERS = [
   { urls: 'stun:stun.l.google.com:19302' },
@@ -73,17 +74,19 @@ export const useWebRtcDemo = (): UseWebRtcDemoResult => {
         const peerConnection = new RTCPeerConnection({ iceServers: ICE_SERVERS });
         peerConnectionRef.current = peerConnection;
 
-        peerConnection.onicecandidate = event => {
-          if (event.candidate) {
-            signalingClient.emitSignal({
-              sessionId,
-              type: 'candidate',
-              candidate: event.candidate,
-            });
-          }
+        // Override addIceCandidate to match original signature (Promise-based)
+        peerConnection.addIceCandidate = async (candidate: RTCIceCandidate) => {
+          signalingClient.emitSignal({
+            sessionId,
+            type: 'candidate',
+            candidate,
+          });
+          // Method is expected to return Promise<void>
+          return Promise.resolve();
         };
 
-        peerConnection.ontrack = event => {
+        // @ts-ignore - react-native-webrtc uses ontrack property
+        peerConnection.ontrack = (event: RTCTrackEvent<'track'>) => {
           const [stream] = event.streams;
           if (stream) {
             setRemoteStream(stream);
@@ -106,7 +109,7 @@ export const useWebRtcDemo = (): UseWebRtcDemoResult => {
           if (payload.type === 'offer' && role === 'receiver') {
             const offerDescription = new RTCSessionDescription({
               type: 'offer',
-              sdp: payload.sdp,
+              sdp: payload.sdp ?? '',
             });
             await peerConnectionRef.current.setRemoteDescription(
               offerDescription,
@@ -121,13 +124,11 @@ export const useWebRtcDemo = (): UseWebRtcDemoResult => {
           } else if (payload.type === 'answer' && role === 'sender') {
             const answerDescription = new RTCSessionDescription({
               type: 'answer',
-              sdp: payload.sdp,
+              sdp: payload.sdp ?? '',
             });
-            if (!peerConnectionRef.current.currentRemoteDescription) {
-              await peerConnectionRef.current.setRemoteDescription(
-                answerDescription,
-              );
-            }
+            await peerConnectionRef.current.setRemoteDescription(
+              answerDescription,
+            );
           } else if (payload.type === 'candidate' && payload.candidate) {
             try {
               await peerConnectionRef.current.addIceCandidate(
@@ -143,7 +144,7 @@ export const useWebRtcDemo = (): UseWebRtcDemoResult => {
         signalHandlerRef.current = handleSignal;
 
         if (role === 'sender') {
-          const offer = await peerConnection.createOffer();
+          const offer = await peerConnection.createOffer({});
           await peerConnection.setLocalDescription(offer);
           signalingClient.emitSignal({
             sessionId,

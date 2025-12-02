@@ -76,7 +76,11 @@ export const HomeScreen = (): React.ReactElement => {
       await stopCapture();
       return;
     }
-    await startCapture({ audio: true, resolution: '720p' });
+    await startCapture({
+      audio: true, resolution: '720p',
+      fps: 0,
+      filePath: null
+    });
   };
 
   return (

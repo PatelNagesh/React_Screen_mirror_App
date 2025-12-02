@@ -1,4 +1,4 @@
-import type { RTCIceCandidateType } from 'react-native-webrtc';
+import type { RTCIceCandidate } from 'react-native-webrtc';
 
 export type SignalRole = 'sender' | 'receiver';
 
@@ -8,6 +8,6 @@ export interface SignalPayload {
   sessionId: string;
   type: SignalType;
   sdp?: string;
-  candidate?: RTCIceCandidateType;
+  candidate?: RTCIceCandidate;
 }
 

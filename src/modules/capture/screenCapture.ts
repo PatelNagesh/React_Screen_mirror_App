@@ -1,5 +1,5 @@
 import { NativeEventEmitter, NativeModules, Platform } from 'react-native';
-import RecordScreen from 'react-native-record-screen';
+import { startGlobalRecording, stopGlobalRecording } from 'react-native-nitro-screen-recorder';
 
 import type {
   CaptureEvent,
@@ -7,59 +7,64 @@ import type {
   ScreenCaptureResult,
 } from './types';
 
-type ScreenCaptureNativeModule = {
-  requestPermission?: () => Promise<boolean>;
-  startCapture?: (options?: ScreenCaptureOptions) => Promise<ScreenCaptureResult>;
-  stopCapture?: () => Promise<ScreenCaptureResult>;
-  isCapturing?: () => Promise<boolean>;
-};
+// Nitro module
+const { NitroScreenRecorder } = NativeModules;
 
-const { ScreenCaptureModule } = NativeModules as {
-  ScreenCaptureModule?: ScreenCaptureNativeModule;
-};
-
-const captureEmitter = ScreenCaptureModule
-  ? new NativeEventEmitter(ScreenCaptureModule)
+// Event Emitter
+const captureEmitter = NitroScreenRecorder
+  ? new NativeEventEmitter(NitroScreenRecorder)
   : null;
 
+// ---------------------------------------------------------------------
+// PERMISSION (Android only)
+// Nitro handles permissions internally (MediaProjection)
+// ---------------------------------------------------------------------
 export const requestScreenCapturePermission = async (): Promise<boolean> => {
-  if (ScreenCaptureModule?.requestPermission) {
-    return ScreenCaptureModule.requestPermission();
-  }
   if (Platform.OS === 'android') {
-    // Permissions are handled when invoking RecordScreen.
-    return true;
+    const granted = await NitroScreenRecorder.requestPermission();
+    return granted;
   }
   return true;
 };
 
+// ---------------------------------------------------------------------
+// START RECORDING
+// ---------------------------------------------------------------------
 export const startScreenCapture = async (
-  options: ScreenCaptureOptions = {},
+  options: ScreenCaptureOptions = {
+    fps: 0,
+    filePath: null
+  },
 ): Promise<ScreenCaptureResult | void> => {
-  if (ScreenCaptureModule?.startCapture) {
-    return ScreenCaptureModule.startCapture(options);
-  }
+  if (!NitroScreenRecorder) return;
 
-  return RecordScreen.startRecording({ mic: options.audio ?? false });
+  return NitroScreenRecorder.startRecording({
+    audio: options.audio ?? false,
+    filepath: options.filePath ?? null,  
+    fps: options.fps ?? 30,
+    bitrate: options.bitrate ?? 8000000,
+  });
 };
 
-export const stopScreenCapture = async (): Promise<
-  ScreenCaptureResult | void
-> => {
-  if (ScreenCaptureModule?.stopCapture) {
-    return ScreenCaptureModule.stopCapture();
-  }
-
-  return RecordScreen.stopRecording();
+// ---------------------------------------------------------------------
+// STOP RECORDING
+// ---------------------------------------------------------------------
+export const stopScreenCapture = async (): Promise<ScreenCaptureResult | void> => {
+  if (!NitroScreenRecorder) return;
+  return NitroScreenRecorder.stopRecording();
 };
 
+// ---------------------------------------------------------------------
+// CHECK IF RECORDING
+// ---------------------------------------------------------------------
 export const isScreenCaptureActive = async (): Promise<boolean> => {
-  if (ScreenCaptureModule?.isCapturing) {
-    return ScreenCaptureModule.isCapturing();
-  }
-  return false;
+  if (!NitroScreenRecorder) return false;
+  return NitroScreenRecorder.checkRecording();
 };
 
+// ---------------------------------------------------------------------
+// ADD EVENT LISTENER (pause/resume/status updates)
+// ---------------------------------------------------------------------
 export const addScreenCaptureListener = (
   listener: (event: CaptureEvent) => void,
 ) => {
@@ -67,8 +72,8 @@ export const addScreenCaptureListener = (
     return { remove: () => undefined };
   }
 
-  return captureEmitter.addListener('ScreenCaptureEvent', listener);
+  return captureEmitter.addListener('onRecordingEvent', listener);
 };
 
-export { ScreenCaptureOptions, ScreenCaptureResult } from './types';
+export type { ScreenCaptureOptions, ScreenCaptureResult } from './types';
 

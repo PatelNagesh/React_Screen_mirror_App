@@ -16,6 +16,7 @@ import { colors, spacing, typography, radii, shadows } from '../../theme';
 import { useUserStore } from '../../state';
 import { Button, Card, Input } from '../../components';
 import type { RootStackParamList } from '../../navigation/types';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 
 type Field = 'email' | 'password' | null;
 
@@ -169,7 +170,6 @@ export const AuthScreen = (): React.ReactElement => {
             style={styles.signInButton}
           />
         </Card>
-        </View>
 
         <View style={styles.dividerBlock}>
           <View style={styles.dividerLine} />

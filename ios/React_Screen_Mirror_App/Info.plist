@@ -50,5 +50,21 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>Allow $(PRODUCT_NAME) to access your camera for screen recording with camera overlay</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Allow $(PRODUCT_NAME) to access your microphone for screen recording with audio</string>
+	<key>AppGroupIdentifier</key>
+	<string>group.com.nitro.screenrecorder</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need access to your photo library to save photos/videos</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>We need access to your photo library to save photos/videos</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>We need access to your Bluetooth peripherals for device discovery</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>We need access to your Bluetooth peripherals for device discovery</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We need access to your location for device discovery</string>
 </dict>
 </plist>

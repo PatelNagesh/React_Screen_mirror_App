@@ -33,14 +33,28 @@ jest.mock('react-native-webrtc', () => {
   };
 });
 
-jest.mock('react-native-record-screen', () => ({
-  startRecording: jest.fn().mockResolvedValue({ status: 'success' }),
-  stopRecording: jest.fn().mockResolvedValue({ status: 'success' }),
-  clean: jest.fn(),
+// ⛔ REMOVE this old mock:
+// jest.mock('react-native-record-screen', () => ({
+//   startRecording: jest.fn().mockResolvedValue({ status: 'success' }),
+//   stopRecording: jest.fn().mockResolvedValue({ status: 'success' }),
+//   clean: jest.fn(),
+//   default: {
+//     startRecording: jest.fn().mockResolvedValue({ status: 'success' }),
+//     stopRecording: jest.fn().mockResolvedValue({ status: 'success' }),
+//     clean: jest.fn(),
+//   },
+// }));
+
+// ✅ NEW MOCK FOR Nitro Screen Recorder
+jest.mock('react-native-nitro-screen-recorder', () => ({
+  requestPermission: jest.fn().mockResolvedValue(true),
+  startRecording: jest.fn().mockResolvedValue({ status: 'success', filePath: '/tmp/demo.mp4' }),
+  stopRecording: jest.fn().mockResolvedValue({ status: 'success', filePath: '/tmp/demo.mp4' }),
+  checkRecording: jest.fn().mockResolvedValue(false),
   default: {
-    startRecording: jest.fn().mockResolvedValue({ status: 'success' }),
-    stopRecording: jest.fn().mockResolvedValue({ status: 'success' }),
-    clean: jest.fn(),
+    requestPermission: jest.fn().mockResolvedValue(true),
+    startRecording: jest.fn().mockResolvedValue({ status: 'success', filePath: '/tmp/demo.mp4' }),
+    stopRecording: jest.fn().mockResolvedValue({ status: 'success', filePath: '/tmp/demo.mp4' }),
+    checkRecording: jest.fn().mockResolvedValue(false),
   },
 }));
-

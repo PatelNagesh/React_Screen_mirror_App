@@ -26,7 +26,7 @@ interface AuthState {
 // Mock authentication functions - replace with real API calls
 const mockSignIn = async (email: string, password: string): Promise<User> => {
   // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await new Promise(resolve => setTimeout(() => resolve(true), 1000));
 
   // Mock validation
   if (!email.includes('@') || password.length < 6) {
@@ -43,7 +43,7 @@ const mockSignIn = async (email: string, password: string): Promise<User> => {
 
 const mockSignUp = async (email: string, password: string, name?: string): Promise<User> => {
   // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await new Promise(resolve => setTimeout(() => resolve(true), 1000));
 
   // Mock validation
   if (!email.includes('@') || password.length < 6) {
@@ -98,7 +98,7 @@ export const useUserStore = create<AuthState>()(
         try {
           set({ isLoading: true, error: null });
           // Mock Google sign in
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(() => resolve(true), 1000));
           const user: User = {
             id: 'google_' + Date.now(),
             email: 'user@gmail.com',
@@ -119,7 +119,7 @@ export const useUserStore = create<AuthState>()(
         try {
           set({ isLoading: true, error: null });
           // Mock Apple sign in
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(() => resolve(true), 1000));
           const user: User = {
             id: 'apple_' + Date.now(),
             email: 'user@icloud.com',
